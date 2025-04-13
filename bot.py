@@ -5,7 +5,7 @@ import responses
 # Get bot token
 TOKEN = 'MTM2MDY5NzY3OTg3MjUyODU5Ng.GykOFH.Ft91vod6vef7pbJvBxWHLbg9-wO4vce1Hfj2vc'
 
-# Getting user input
+# Getting user input and replying
 async def send_message(message, user_message, is_private):
     try:
         response = responses.get_response(user_message)
