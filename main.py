@@ -9,7 +9,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = commands.Bot(command_prefix="!", intents=intents)
 
-# Client 
+# Bot client
 @client.event
 async def on_ready():
     print("Bot ready")
