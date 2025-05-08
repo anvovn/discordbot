@@ -1,5 +1,4 @@
 # Import Discord Package
-import responses
 import discord
 from discord.ext import commands
 import os
