@@ -3,7 +3,7 @@ import discord
 import responses
 
 # Get bot token
-TOKEN = 'MTM2MDY5NzY3OTg3MjUyODU5Ng.GykOFH.Ft91vod6vef7pbJvBxWHLbg9-wO4vce1Hfj2vc'
+TOKEN = 'MTM2MDY5NzY3OTg3MjUyODU5Ng.GXOaZJ.0ZbdA4C91ndaJv_qSuw-YA9daq3XVCTgQI_HIg'
 
 # Getting user input and replying
 async def send_message(message, user_message, is_private):
@@ -16,6 +16,7 @@ async def send_message(message, user_message, is_private):
 
 # Client 
 class MyClient(discord.Client):  # Hover over discord.Client to see all parameters that can be passed for line 18 - "client = MyClient"
+
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
 
