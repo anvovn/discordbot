@@ -7,7 +7,7 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"{__name__} ready")
+        print(f"{self.__class__.__name__} ready")
     
     @commands.command()
     async def play(self, ctx):
@@ -19,7 +19,7 @@ class SB(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"{__name__} ready")
+        print(f"{self.__class__.__name__} ready")
     
     @commands.command()
     async def sb(self, ctx):
