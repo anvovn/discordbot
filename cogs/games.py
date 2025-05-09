@@ -11,7 +11,7 @@ class Roll(commands.Cog):
     
     @commands.command()
     async def roll(self, ctx):
-        await ctx.send("Test")
+        await ctx.send("Games test")
 
 async def setup(bot):
     await bot.add_cog(Roll(bot))
