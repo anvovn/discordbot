@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 import aiohttp
 import os
@@ -29,6 +29,10 @@ class Info(commands.Cog):
             icon_url=interaction.user.avatar.url if interaction.user.avatar else ""
         )
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="reminder", description="Set a reminder")
+    @app_commands.describe(hours)
+    async def remind(self, interaction: discord.Interaction):
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
