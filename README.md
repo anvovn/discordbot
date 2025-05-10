@@ -4,7 +4,7 @@
 
 ## Installation
 
-Please make sure you have the discord module downloaded on your system (make sure you have [Python](https://www.python.org/downloads/) installed already)
+First, install the discord module on your system if you don't have it (most importantly, make sure you have [Python](https://www.python.org/downloads/) installed). Installing in a virtual environment is recommended.
 
 ```bash
 # Linux/macOS
@@ -46,4 +46,4 @@ TOKEN = '<your token goes here>'
 ...
 ```
 
-Once that is all completed. Run main.py and your bot should be up and running!
+Once that is all completed, run main.py and the bot should be up and running!
