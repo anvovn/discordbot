@@ -37,12 +37,13 @@ git clone git@github.com:anvovn/cs407-project.git
 
 Once you've downloaded/cloned and opened up the files, locate the main.py file, in which you'll see that you need to insert a bot token in line 8.
 To get the bot token, go back to the Discord Developer page, and under the Bot tab, click Reset Token and copy it, then assign that value as a string
-for the TOKEN variable on line 8.
+for the TOKEN variable on line 8. You may also want to assign GUILD_ID in which you right click on your server's picture and click "copy id."
 
 ```python
 ...
 # Initialize bot
 TOKEN = '<your token goes here>'
+GUILD_ID = discord.Object(id= <your guild id goes here>)
 ...
 ```
 
