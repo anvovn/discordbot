@@ -17,9 +17,13 @@ class Sound(commands.Cog):
         await interaction.response.send_message("Music test")
 
     # Soundboard
-    # @app_commands.command()
-    # async def sb(self, ctx):
-    #     await ctx.send("Soundboard test")
+    @app_commands.command(name='play', description= 'Play music')
+    @app_commands.describe()
+    async def sb(self, interaction: discord.Interaction):
+        await interaction.response.send_message("Soundboard test")
+
+class MusicButtons(discord.ui.View):
+    pass
 
 async def setup(bot):
     await bot.add_cog(Sound(bot))
