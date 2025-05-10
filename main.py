@@ -5,8 +5,8 @@ import os
 import asyncio
 
 # Initialize bot
-TOKEN = 'MTM2MDY5NzY3OTg3MjUyODU5Ng.GXOaZJ.0ZbdA4C91ndaJv_qSuw-YA9daq3XVCTgQI_HIg'
-GUILD_ID = discord.Object(id=1360030609841590425)
+TOKEN = '' # Insert token here
+GUILD_ID = discord.Object(id=0) # Insert ID here
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
