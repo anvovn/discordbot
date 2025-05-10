@@ -2,7 +2,10 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import aiohttp
+import asyncio
 import os
+
+OPENWEATHER_API_KEY = "5eafb5d6b8e5e9284d3888ae92b1d32a"
 
 class Info(commands.Cog):
     def init(self, bot):
@@ -12,6 +15,7 @@ class Info(commands.Cog):
     async def on_ready(self):
         print(f"{self.__class__.__name__} ready")
 
+    # Info
     @app_commands.command(name="info", description="Provide Information about the bot")
     async def info(self, interaction: discord.Interaction):
         embed = discord.Embed(
@@ -30,46 +34,15 @@ class Info(commands.Cog):
         )
         await interaction.response.send_message(embed=embed)
 
+    # Reminders
     @app_commands.command(name="reminder", description="Set a reminder")
-    @app_commands.describe(hours)
-    async def remind(self, interaction: discord.Interaction):
+    @app_commands.describe(action="Describe the task", minutes="Enter minutes", seconds="Enter seconds")
+    async def remind(self, interaction: discord.Interaction, action: str, minutes: int, seconds: int):
+        await interaction.response.send_message(f"Reminder: \"{action}\", set for {minutes} minutes and {seconds} seconds!")
+        await asyncio.sleep(minutes * 60 + seconds)
+        await interaction.followup.send(f"Time to {action} {interaction.user.mention}!")
 
-class Moderation(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f"{self.__class__.__name__} ready")
-
-    @app_commands.command(name="kick", description="Kick a user from the server")
-    @app_commands.checks.has_permissions(kick_members=True)
-    async def kick(self, interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
-        await member.kick(reason=reason)
-        await interaction.response.send_message(f"Kicked {member.mention} for: {reason}")
-
-    @app_commands.command(name="ban", description="Ban a user from the server")
-    @app_commands.checks.has_permissions(ban_members=True)
-    async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
-        await member.ban(reason=reason)
-        await interaction.response.send_message(f"Banned {member.mention} for: {reason}")
-
-    @app_commands.command(name="clear", description="Clear a number of messages from the current channel")
-    @app_commands.checks.has_permissions(manage_messages=True)
-    async def clear(self, interaction: discord.Interaction, amount: int):
-        await interaction.channel.purge(limit=amount)
-        await interaction.response.send_message(f"Cleared {amount} messages.", ephemeral=True)
-
-
-OPENWEATHER_API_KEY = "5eafb5d6b8e5e9284d3888ae92b1d32a"
-class Weather(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f"{self.__class__.__name__} ready")
-    
+    # Get weather
     @app_commands.command(name="weather", description="Display the current weather for a city")
     @app_commands.describe(city="The name of the city to get the weather for")
     async def weather(self, interaction: discord.Interaction, city: str):
@@ -99,7 +72,35 @@ class Weather(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
+class Moderation(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print(f"{self.__class__.__name__} ready")
+
+    # Kick
+    @app_commands.command(name="kick", description="Kick a user from the server")
+    @app_commands.checks.has_permissions(kick_members=True)
+    async def kick(self, interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
+        await member.kick(reason=reason)
+        await interaction.response.send_message(f"Kicked {member.mention} for: {reason}")
+
+    # Ban
+    @app_commands.command(name="ban", description="Ban a user from the server")
+    @app_commands.checks.has_permissions(ban_members=True)
+    async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
+        await member.ban(reason=reason)
+        await interaction.response.send_message(f"Banned {member.mention} for: {reason}")
+
+    # Clear msgs
+    @app_commands.command(name="clear", description="Clear a number of messages from the current channel")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def clear(self, interaction: discord.Interaction, amount: int):
+        await interaction.channel.purge(limit=amount)
+        await interaction.response.send_message(f"Cleared {amount} messages.", ephemeral=True)
+
 async def setup(bot):
     await bot.add_cog(Info(bot))
     await bot.add_cog(Moderation(bot))
-    await bot.add_cog(Weather(bot))
