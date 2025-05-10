@@ -25,7 +25,7 @@ class Roll(commands.Cog):
         result = random.randint(1, number)
         await interaction.response.send_message(f"🎲 **{result}**")
 
-class YesNo(commands.Cog):
+class EightBall(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -33,11 +33,11 @@ class YesNo(commands.Cog):
     async def on_ready(self):
         print(f"{self.__class__.__name__} ready")
 
-    @app_commands.command(name="yesno", description="Yes or No")
+    @app_commands.command(name="8ball", description="Yes / No / Maybe")
     async def yesno(self, interaction: discord.Interaction):
-        result = random.choice(["Yes", "No"])
+        result = random.choice(["Yes", "No", "Maybe", "Definitely", "Absolutely not"])
         await interaction.response.send_message(result)
 
 async def setup(bot):
     await bot.add_cog(Roll(bot))
-    await bot.add_cog(YesNo(bot))
+    await bot.add_cog(EightBall(bot))
