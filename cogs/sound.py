@@ -17,7 +17,7 @@ class Sound(commands.Cog):
         await interaction.response.send_message("Music test")
 
     # Soundboard
-    @app_commands.command(name='play', description= 'Play music')
+    @app_commands.command(name='sb', description= 'Play music')
     @app_commands.describe()
     async def sb(self, interaction: discord.Interaction):
         await interaction.response.send_message("Soundboard test")

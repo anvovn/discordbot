@@ -29,7 +29,7 @@ class Info(commands.Cog):
         embed.set_footer(text="Creator: An, Tyler")
         embed.set_author(
             name=interaction.user.name,
-            url="https://chatgpt.com/?ref=glasp",
+            url="",
             icon_url=interaction.user.avatar.url if interaction.user.avatar else ""
         )
         await interaction.response.send_message(embed=embed)
