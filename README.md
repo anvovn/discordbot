@@ -4,7 +4,7 @@
 
 ## Installation
 
-Please make sure you have the discord module downloaded on your system
+Please make sure you have the discord module downloaded on your system (make sure you have [Python](https://www.python.org/downloads/) installed already)
 
 ```bash
 # Linux/macOS
