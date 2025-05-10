@@ -6,13 +6,13 @@
 
 Please make sure you have the discord module downloaded on your system
 
-'''bash
+```bash
 # Linux/macOS
 python3 -m pip install -U discord.py
 
 # Windows
 py -3 -m pip install -U discord.py
-'''
+```
 
 ## Set Up Bot on Discord Developer site
 
@@ -29,9 +29,9 @@ From here, go through the following steps to set up your bot:
 
 Please keep the Discord Developer tab up as you will need to go back to it later. You can now download the repo, or clone it using SSH:
 
-'''bash
+```bash
 git clone git@github.com:anvovn/cs407-project.git
-'''
+```
 
 ## Assigning Bot Token
 
@@ -39,11 +39,11 @@ Once you've downloaded/cloned and opened up the files, locate the main.py file, 
 To get the bot token, go back to the Discord Developer page, and under the Bot tab, click Reset Token and copy it, then assign that value as a string
 for the TOKEN variable on line 8.
 
-'''python
+```python
 ...
 # Initialize bot
 TOKEN = '<your token goes here>'
 ...
-'''
+```
 
 Once that is all completed. Run main.py and your bot should be up and running!
