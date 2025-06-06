@@ -64,6 +64,7 @@ class Sound(commands.Cog):
                 except Exception as e:
                     print(f"Error calling play_next: {e}")
 
+            # Music status
             voice_client.play(source, after=after_playing)
             embed = discord.Embed(
                     title = title,
@@ -106,8 +107,7 @@ class MusicButtons(discord.ui.View):
             await interaction.followup.send("Music is Currently Paused", ephemeral=True)
             return
             
-
-    @discord.ui.button(label="Skip", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Skip", style=discord.ButtonStyle.grey)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.button):
         await interaction.response.defer()
         voice_client = interaction.guild.voice_client
@@ -131,7 +131,6 @@ class MusicButtons(discord.ui.View):
         if voice_client and voice_client.is_connected():
             await voice_client.disconnect()
             await interaction.followup.send("Successfully Disconnected.", ephemeral=True)
-    
         
 async def setup(bot):
     await bot.add_cog(Sound(bot))
