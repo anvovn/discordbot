@@ -80,10 +80,15 @@ class Games(commands.Cog):
 
         await interaction.response.send_message("Poker game starting! Click to join:", view=view)
 
-        await asyncio.sleep(10)  # wait for players to join
+        cd = 10
+        msg = await interaction.followup.send(embed=discord.Embed(description=f"{cd} seconds left to join"), wait=True)
+        for i in range(cd + 1):
+            updated_embed = discord.Embed(description=f"{cd - i} seconds left to join")
+            await msg.edit(embed=updated_embed)
+            await asyncio.sleep(1)
 
         if len(game.players) < 2:
-            await interaction.followup.send("Not enough players to start the game.")
+            await msg.edit(content="Not enough players to start the game.", embed=None)
             del self.active_games[interaction.channel.id]
             return
 
@@ -115,21 +120,24 @@ class Games(commands.Cog):
 
             results = game.evaluate()
 
-            embed = discord.Embed(title="🃏 Poker Results", color=discord.Color.gold())
-            board_cards = " ".join(Card.int_to_pretty_str(c) for c in game.board)
-            embed.add_field(name="Community Cards", value=board_cards, inline=False)
+            if len(results) == 0:
+                await interaction.followup.send(f"No winners. Everybody folded.")
+            else:
+                embed = discord.Embed(title="🃏 Poker Results", color=discord.Color.gold())
+                board_cards = " ".join(Card.int_to_pretty_str(c) for c in game.board)
+                embed.add_field(name="Community Cards", value=board_cards, inline=False)
 
-            for score, player in results:
-                if not player.folded:
-                    hand_str = " ".join(Card.int_to_pretty_str(c) for c in player.hand)
-                    embed.add_field(name=player.user.display_name, value=f"Hand: {hand_str}\nScore: {score}", inline=False)
-                else:
-                    embed.add_field(name=player.user.display_name, value="Folded", inline=False)
+                for score, player in results:
+                    if not player.folded:
+                        hand_str = " ".join(Card.int_to_pretty_str(c) for c in player.hand)
+                        embed.add_field(name=player.user.display_name, value=f"Hand: {hand_str}\nScore: {score}", inline=False)
+                    else:
+                        embed.add_field(name=player.user.display_name, value="Folded", inline=False)
 
-            winner = results[0][1]
-            embed.add_field(name="Winner", value=f"🏆 {winner.user.mention} wins the pot of ${game.pot}!", inline=False)
-            winner.balance += game.pot
-            await interaction.followup.send(embed=embed)
+                winner = results[0][1]
+                embed.add_field(name="Winner", value=f"🏆 {winner.user.mention} wins the pot of ${game.pot}!", inline=False)
+                winner.balance += game.pot
+                await interaction.followup.send(embed=embed)
 
             tmp = []
             stats = []
@@ -144,15 +152,21 @@ class Games(commands.Cog):
             game.players = tmp
 
             # Play again
+            game.started = False
             view = PokerEndView(game)
             await interaction.followup.send("Please wait until the next round starts, otherwise hit leave", view=view)
 
-            await asyncio.sleep(10)  # wait for players to join
+            msg = await interaction.followup.send(embed=discord.Embed(description=f"{cd} seconds left to join"), wait=True)
+            for i in range(cd + 1):
+                updated_embed = discord.Embed(description=f"{cd - i} seconds left to join")
+                await msg.edit(embed=updated_embed)
+                await asyncio.sleep(1)
 
             if len(game.players) < 2:
                 await interaction.followup.send("Not enough players to start the game.")
                 del self.active_games[interaction.channel.id]
-                game.started = False
+            else:
+                game.started = True
             
         del self.active_games[interaction.channel.id]
 
@@ -160,6 +174,9 @@ class Games(commands.Cog):
         active_players = [p for p in game.players if not p.folded and p.balance > 0]
 
         for player in active_players:
+            if len(active_players) == 1:
+                break
+
             if player.folded:
                 continue
 
@@ -172,56 +189,59 @@ class Games(commands.Cog):
             def check(m):
                 return m.author == player.user and m.channel == game.channel
 
-            await game.channel.send(
-                f"{player.user.mention}, the current bet is ${game.current_bet}. "
-                f"Your balance: ${player.balance}. Your current bet: ${player.current_bet}. "
-                "Type 'call', 'raise <amount>', or 'fold'."
-            )
+            while True:
+                await game.channel.send(
+                    f"{player.user.mention}, the current bet is ${game.current_bet}. "
+                    f"Your balance: ${player.balance}. Your current bet: ${player.current_bet}. "
+                    "Type 'call', 'raise <amount>', or 'fold'."
+                )
 
-            try:
-                msg = await self.bot.wait_for('message', check=check, timeout=30)
-                content = msg.content.lower()
+                try:
+                    msg = await self.bot.wait_for('message', check=check, timeout=30)
+                    content = msg.content.lower()
 
-                if content.startswith("fold"):
-                    player.folded = True
-
-                elif content.startswith("call"):
-                    if call_amount > player.balance:
-                        # All-in scenario
-                        game.pot += player.balance
-                        player.current_bet += player.balance
-                        player.balance = 0
-                        await game.channel.send(f"{player.user.mention} goes all-in!")
-                    else:
-                        player.balance -= call_amount
-                        player.current_bet += call_amount
-                        game.pot += call_amount
-
-                elif content.startswith("raise"):
-                    parts = content.split()
-                    if len(parts) == 2 and parts[1].isdigit():
-                        raise_amt = int(parts[1])
-                        total_to_call_and_raise = call_amount + raise_amt
-
-                        if total_to_call_and_raise > player.balance:
-                            await game.channel.send(f"{player.user.mention}, not enough balance to raise ${raise_amt}. You folded.")
-                            player.folded = True
-                        else:
-                            player.balance -= total_to_call_and_raise
-                            player.current_bet += total_to_call_and_raise
-                            game.pot += total_to_call_and_raise
-                            game.current_bet = player.current_bet
-                    else:
-                        await game.channel.send("Invalid raise format. Type 'raise <amount>'. You folded.")
+                    if content.startswith("fold"):
                         player.folded = True
+                        break
 
-                else:
-                    await game.channel.send("Invalid action. You folded by default.")
+                    elif content.startswith("call"):
+                        if call_amount > player.balance:
+                            await game.channel.send(f"{player.user.mention}, not enough balance to call ${raise_amt}. Automatic Fold.")
+                            player.folded = True
+                            break
+                        else:
+                            player.balance -= call_amount
+                            player.current_bet += call_amount
+                            game.pot += call_amount
+                        break
+
+                    elif content.startswith("raise"):
+                        parts = content.split()
+                        if len(parts) == 2 and parts[1].isdigit():
+                            raise_amt = int(parts[1])
+                            total_to_call_and_raise = call_amount + raise_amt
+
+                            if total_to_call_and_raise > player.balance:
+                                await game.channel.send(f"{player.user.mention}, not enough balance to raise it by ${raise_amt}. Needs to be at or below ${abs(call_amount - player.balance)}. Try again.")
+                                continue
+                            else:
+                                player.balance -= total_to_call_and_raise
+                                player.current_bet += total_to_call_and_raise
+                                game.pot += total_to_call_and_raise
+                                game.current_bet = player.current_bet
+                                break
+                        else:
+                            await game.channel.send("Invalid raise format. Type 'raise <amount>'. Try again.")
+                            continue
+
+                    else:
+                        await game.channel.send("Invalid action. Try again.")
+                        continue
+
+                except asyncio.TimeoutError:
+                    await game.channel.send(f"{player.user.mention} took too long and folded.")
                     player.folded = True
-
-            except asyncio.TimeoutError:
-                await game.channel.send(f"{player.user.mention} took too long and folded.")
-                player.folded = True
+                    break
 
 class BlackjackButtons(discord.ui.View):
     def __init__(self, player_hand, dealer_hand, show_hands):
@@ -336,7 +356,7 @@ class PokerView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.game = game
 
-    @discord.ui.button(label="Join Game", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Join Game", style=discord.ButtonStyle.green)
     async def join(self, interaction: discord.Interaction, button: discord.ui.Button):
         user = interaction.user
         if self.game.add_player(user):
@@ -348,6 +368,14 @@ class PokerEndView(discord.ui.View):
     def __init__(self, game, timeout=30):
         super().__init__(timeout=timeout)
         self.game = game
+
+    @discord.ui.button(label="Join Game (if new)", style=discord.ButtonStyle.green)
+    async def join1(self, interaction: discord.Interaction, button: discord.ui.Button):
+        user = interaction.user
+        if self.game.add_player(user):
+            await interaction.response.send_message(f"{user.mention} joined the game!")
+        else:
+            await interaction.response.send_message("You're already in or game has started.", ephemeral=True)
 
     @discord.ui.button(label="Leave Game", style=discord.ButtonStyle.red)
     async def leave(self, interaction: discord.Interaction, button: discord.ui.Button):
