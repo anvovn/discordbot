@@ -25,7 +25,7 @@ class Info(commands.Cog):
            color=discord.Color.green()
         )
         embed.set_thumbnail(url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8dm1kH_dIjn2dtMwkgO2wbdHunzc2ayEUZQ&s")
-        embed.add_field(name="Commands", value="/info, /roll, /8ball, /weather, /kick, /ban, /clear", inline=False)
+        embed.add_field(name="Commands", value=f"/8ball, /ban, /blackjack, /clear, /info, /kick, /play, /poker, /reminder, /roll, /weather", inline=False)
         embed.set_footer(text="Creator: An, Tyler")
         embed.set_author(
             name=interaction.user.name,
