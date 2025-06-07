@@ -389,7 +389,8 @@ class PokerEndView(discord.ui.View):
             await interaction.response.send_message(f"{user.mention} has left the game!")
         else:
             await interaction.response.send_message("You've already left the game.", ephemeral=True)
-    
+
+# Sports Betting
 class SportsBetting(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
