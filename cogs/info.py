@@ -4,6 +4,15 @@ from discord import app_commands
 import aiohttp
 import asyncio
 import os
+import requests
+import json
+import random
+from datetime import datetime, timedelta
+import statistics
+from dotenv import load_dotenv
+from pathlib import Path
+from discord import app_commands, Interaction, Embed, Color
+from discord.ui import Button, View
 
 OPENWEATHER_API_KEY = "5eafb5d6b8e5e9284d3888ae92b1d32a"
 
@@ -101,6 +110,81 @@ class Moderation(commands.Cog):
         await interaction.channel.purge(limit=amount)
         await interaction.response.send_message(f"Cleared {amount} messages.", ephemeral=True)
 
+ALPHA_VANTAGE_API_KEY = "Q2V7FMJ8LM7I8RG2"
+
+class Stocks(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="stock", description="Get stock price and trends")
+    @app_commands.describe(symbol="Stock symbol (e.g. AAPL, MSFT)")
+    async def stock(self, interaction: discord.Interaction, symbol: str):
+        await interaction.response.defer()
+        
+        # API endpoints
+        quote_url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={ALPHA_VANTAGE_API_KEY}"
+        daily_url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={ALPHA_VANTAGE_API_KEY}&outputsize=compact"
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                # Get current quote
+                async with session.get(quote_url) as resp:
+                    if resp.status != 200:
+                        await interaction.followup.send("Could not fetch stock data. Please try again later.")
+                        return
+                    quote_data = await resp.json()
+                
+                # Get historical data
+                async with session.get(daily_url) as resp:
+                    if resp.status != 200:
+                        await interaction.followup.send("Could not fetch historical data.")
+                        return
+                    history_data = await resp.json()
+
+            # Process current quote
+            if "Global Quote" not in quote_data:
+                await interaction.followup.send(f"Could not find stock symbol {symbol}")
+                return
+                
+            quote = quote_data["Global Quote"]
+            price = float(quote["05. price"])
+            change = float(quote["09. change"])
+            change_percent = quote["10. change percent"]
+            
+            # Process historical data
+            if "Time Series (Daily)" not in history_data:
+                await interaction.followup.send("Could not fetch historical prices")
+                return
+                
+            daily_data = history_data["Time Series (Daily)"]
+            dates = sorted(daily_data.keys(), reverse=True)[:5]  # Last 5 trading days
+            prices = [float(daily_data[date]["4. close"]) for date in dates]
+            
+            # Calculate trend
+            trend = "⬆️" if prices[0] > prices[-1] else "⬇️"
+            trend_percent = abs((prices[0] - prices[-1]) / prices[-1] * 100)
+            
+            # Create embed
+            embed = Embed(
+                title=f"📈 {symbol.upper()} Stock Information",
+                color=0x00ff00 if change > 0 else 0xff0000  # Green if up, red if down
+            )
+            embed.add_field(name="Current Price", value=f"${price:.2f}", inline=True)
+            embed.add_field(name="Change", value=f"{change:.2f} ({change_percent})", inline=True)
+            embed.add_field(name="5-Day Trend", value=f"{trend} {trend_percent:.2f}%", inline=True)
+            
+            # Add price history
+            history_text = "\n".join([f"{date}: ${price:.2f}" for date, price in zip(dates, prices)])
+            embed.add_field(name="Recent Prices", value=history_text, inline=False)
+            
+            await interaction.followup.send(embed=embed)
+            
+        except Exception as e:
+            print(f"Error fetching stock data: {e}")
+            await interaction.followup.send("An error occurred while fetching stock data.")
+
+
 async def setup(bot):
     await bot.add_cog(Info(bot))
     await bot.add_cog(Moderation(bot))
+    await bot.add_cog(Stocks(bot))
