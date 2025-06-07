@@ -5,12 +5,12 @@ import os
 import asyncio
 
 # Initialize bot
-TOKEN = 'MTM2MDY5NzY3OTg3MjUyODU5Ng.GVL-Sy.rNAxGpPIQ5ly4UAvQsn1cZXqLhIJJGvnzW2AUI'  # Insert token here
-GUILD_ID = discord.Object(id=1360030609841590425) # Insert ID here
+TOKEN = 0 # Insert token here
+GUILD_ID = discord.Object(id=0) # Insert ID here
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-bot_status = discord.Game("/help for more")
+bot_status = discord.Game("/info for more")
 
 # Bot client
 @bot.event
