@@ -35,7 +35,7 @@ git clone git@github.com:anvovn/cs407-project.git
 
 ## Assigning Bot Token
 
-Once you've downloaded/cloned and opened up the files, make a new file named ".env" and enter the following in it:
+Once you've downloaded/cloned and opened up the files, make a new file named ".env" in the same directory as "main.py" and enter the following in it:
 
 ```python
 # In ".env"
@@ -47,4 +47,4 @@ You'll want to make sure that you have dotenv installed:
 pip install python-dotenv
 ```
 
-When that is all completed, run main.py, and the bot should be up and running!
+When that is all completed, run "main.py," and the bot should be up and running!
