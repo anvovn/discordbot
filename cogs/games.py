@@ -4,6 +4,11 @@ from discord import app_commands, Interaction
 from treys import Card, Deck, Evaluator
 import asyncio
 import random
+import json
+import random
+from dotenv import load_dotenv
+from pathlib import Path
+from discord import app_commands, Interaction, Embed, Color
 
 class Games(commands.Cog):
     def __init__(self, bot):
@@ -385,5 +390,366 @@ class PokerEndView(discord.ui.View):
         else:
             await interaction.response.send_message("You've already left the game.", ephemeral=True)
     
+class SportsBetting(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.balances_file = Path("data/betting_balances.json")
+        self.balances_file.parent.mkdir(exist_ok=True)
+        self.balances = self._load_balances()
+        
+        # Team databases with power ratings
+        self.nfl_teams = [
+            {"name": "Kansas City Chiefs", "power": 85},
+            {"name": "Philadelphia Eagles", "power": 83},
+            {"name": "Buffalo Bills", "power": 82},
+            {"name": "Cincinnati Bengals", "power": 81},
+            {"name": "San Francisco 49ers", "power": 84},
+            {"name": "Dallas Cowboys", "power": 80},
+            {"name": "Miami Dolphins", "power": 79},
+            {"name": "Baltimore Ravens", "power": 78},
+            {"name": "Los Angeles Chargers", "power": 77},
+            {"name": "Minnesota Vikings", "power": 76},
+            {"name": "New York Giants", "power": 75},
+            {"name": "Detroit Lions", "power": 74}
+        ]
+        
+        self.nba_teams = [
+            {"name": "Boston Celtics", "power": 88},
+            {"name": "Milwaukee Bucks", "power": 87},
+            {"name": "Denver Nuggets", "power": 86},
+            {"name": "Phoenix Suns", "power": 85},
+            {"name": "Los Angeles Lakers", "power": 84},
+            {"name": "Golden State Warriors", "power": 83},
+            {"name": "Miami Heat", "power": 82},
+            {"name": "Philadelphia 76ers", "power": 81},
+            {"name": "Memphis Grizzlies", "power": 80},
+            {"name": "Dallas Mavericks", "power": 79},
+            {"name": "Brooklyn Nets", "power": 78},
+            {"name": "New York Knicks", "power": 77}
+        ]
+
+    def _load_balances(self):
+        """Load user balances from JSON file"""
+        try:
+            if not self.balances_file.exists():
+                return {}
+            with open(self.balances_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading balances: {e}")
+            return {}
+
+    def _save_balances(self):
+        """Save user balances to JSON file"""
+        try:
+            with open(self.balances_file, "w") as f:
+                json.dump(self.balances, f)
+        except Exception as e:
+            print(f"Error saving balances: {e}")
+
+    @app_commands.command(name="sportsbet", description="Start a sports betting session")
+    async def sports_bet(self, interaction: discord.Interaction):
+        """Main betting interface with all options"""
+        user_id = str(interaction.user.id)
+        
+        if user_id not in self.balances:
+            self.balances[user_id] = 1000
+        
+        sport = random.choice(["NFL", "NBA"])
+        if sport == "NFL":
+            team1, team2 = random.sample(self.nfl_teams, 2)
+            total = round(random.uniform(35, 55), 1)
+        else:
+            team1, team2 = random.sample(self.nba_teams, 2)
+            total = round(random.uniform(190, 230), 1)
+
+        # Calculate odds and spread
+        power_diff = team1["power"] - team2["power"]
+        spread = round(power_diff / 4, 1)
+        fav_odds = -150 if power_diff > 5 else -110
+        dog_odds = 130 if power_diff > 5 else 110
+
+        # Determine favorite and underdog
+        if power_diff > 0:
+            favorite = team1["name"]
+            underdog = team2["name"]
+            fav_spread = f"-{abs(spread)}"
+            dog_spread = f"+{abs(spread)}"
+        else:
+            favorite = team2["name"]
+            underdog = team1["name"]
+            fav_spread = f"-{abs(spread)}"
+            dog_spread = f"+{abs(spread)}"
+
+        # Create embed
+        embed = discord.Embed(
+            title=f"🏈 {team1['name']} vs {team2['name']}" if sport == "NFL" else f"🏀 {team1['name']} vs {team2['name']}",
+            color=discord.Color.gold()
+        )
+        embed.add_field(name="💰 Your Balance", value=f"${self.balances[user_id]}", inline=False)
+        
+        # Moneyline
+        embed.add_field(
+            name="Moneyline",
+            value=f"• {favorite}: {fav_odds}\n• {underdog}: +{dog_odds}",
+            inline=False
+        )
+        
+        # Spread
+        embed.add_field(
+            name="Spread",
+            value=f"• {favorite} {fav_spread}\n• {underdog} {dog_spread}",
+            inline=False
+        )
+        
+        # Total
+        embed.add_field(
+            name="Total Points",
+            value=f"• Over {total}: -110\n• Under {total}: -110",
+            inline=False
+        )
+
+        # Store game data
+        self.active_game = {
+            "user_id": user_id,
+            "sport": sport,
+            "teams": {
+                "team1": team1,
+                "team2": team2
+            },
+            "lines": {
+                "moneyline": {
+                    favorite: fav_odds,
+                    underdog: dog_odds
+                },
+                "spread": {
+                    favorite: fav_spread,
+                    underdog: dog_spread
+                },
+                "total": total
+            },
+            "power_diff": power_diff
+        }
+
+        # Create selection view
+        view = BetSelectionView(self)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+class BetSelectionView(discord.ui.View):
+    def __init__(self, cog):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.add_item(BetTypeSelect(cog))
+
+class BetTypeSelect(discord.ui.Select):
+    def __init__(self, cog):
+        self.cog = cog
+        options = [
+            discord.SelectOption(label="Moneyline", value="moneyline"),
+            discord.SelectOption(label="Spread", value="spread"),
+            discord.SelectOption(label="Total", value="total")
+        ]
+        super().__init__(placeholder="Select bet type...", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        game = self.cog.active_game
+        if self.values[0] == "total":
+            # Show over/under selection
+            view = discord.ui.View()
+            view.add_item(TotalSelect(self.cog))
+            await interaction.response.send_message(
+                f"Select Over or Under {game['lines']['total']}:",
+                view=view,
+                ephemeral=True
+            )
+        else:
+            # Show team selection
+            view = discord.ui.View()
+            view.add_item(TeamSelect(self.cog, self.values[0]))
+            await interaction.response.send_message(
+                "Select a team:",
+                view=view,
+                ephemeral=True
+            )
+
+class TeamSelect(discord.ui.Select):
+    def __init__(self, cog, bet_type):
+        self.cog = cog
+        self.bet_type = bet_type
+        game = cog.active_game
+        options = [
+            discord.SelectOption(
+                label=game["teams"]["team1"]["name"],
+                value="team1"
+            ),
+            discord.SelectOption(
+                label=game["teams"]["team2"]["name"],
+                value="team2"
+            )
+        ]
+        super().__init__(placeholder="Select team...", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        game = self.cog.active_game
+        selected_team = self.values[0]
+        team_name = game["teams"][selected_team]["name"]
+        
+        # Store the bet selection
+        self.cog.active_bet = {
+            "type": self.bet_type,
+            "selection": team_name,
+            "odds": game["lines"][self.bet_type][team_name] if self.bet_type != "spread" else -110
+        }
+        
+        # Ask for bet amount
+        await interaction.response.send_message(
+            f"Enter your bet amount for {team_name}:",
+            ephemeral=True
+        )
+        
+        # Wait for amount input
+        def check(m):
+            return m.author == interaction.user and m.channel == interaction.channel
+        
+        try:
+            msg = await self.cog.bot.wait_for("message", check=check, timeout=60)
+            amount = int(float(msg.content))
+            await self.process_bet(interaction, amount)
+        except (asyncio.TimeoutError, ValueError):
+            await interaction.followup.send("Invalid bet amount", ephemeral=True)
+
+    async def process_bet(self, interaction: discord.Interaction, amount: int):
+        user_id = self.cog.active_game["user_id"]
+        game = self.cog.active_game
+        bet = self.cog.active_bet
+        
+        # Simulate game outcome
+        if game["sport"] == "NFL":
+            base = random.randint(10, 30)
+            team1_score = base + int(game["power_diff"] * 0.2)
+            team2_score = base - int(game["power_diff"] * 0.2)
+        else:
+            base = random.randint(90, 120)
+            team1_score = base + int(game["power_diff"] * 0.3)
+            team2_score = base - int(game["power_diff"] * 0.3)
+        
+        total_score = team1_score + team2_score
+        winner = game["teams"]["team1"]["name"] if team1_score > team2_score else game["teams"]["team2"]["name"]
+        
+        # Calculate payout
+        payout = 0
+        result_text = ""
+        
+        if bet["type"] == "moneyline":
+            if bet["selection"] == winner:
+                payout = amount + (amount * (100/abs(bet["odds"]))) if bet["odds"] < 0 else amount * (bet["odds"]/100)
+                result_text = f"✅ {bet['selection']} won! Payout: ${payout:.2f}"
+            else:
+                result_text = f"❌ {bet['selection']} lost. You lost ${amount}"
+        
+        elif bet["type"] == "spread":
+            spread = float(game["lines"]["spread"][bet["selection"]].replace("+", "").replace("-", ""))
+            if "-" in game["lines"]["spread"][bet["selection"]]:  # Favorite
+                covered = (team1_score - team2_score) > spread if bet["selection"] == game["teams"]["team1"]["name"] else (team2_score - team1_score) > spread
+            else:  # Underdog
+                covered = (team2_score - team1_score) < spread if bet["selection"] == game["teams"]["team1"]["name"] else (team1_score - team2_score) < spread
+            
+            if covered:
+                payout = amount + (amount * (100/110))
+                result_text = f"✅ {bet['selection']} covered the spread! Payout: ${payout:.2f}"
+            else:
+                result_text = f"❌ {bet['selection']} didn't cover. You lost ${amount}"
+        
+        # Update balance
+        self.cog.balances[user_id] += payout - amount
+        self.cog._save_balances()
+        
+        # Create result embed
+        result_embed = discord.Embed(
+            title=f"🎲 {game['teams']['team1']['name']} {team1_score}-{team2_score} {game['teams']['team2']['name']}",
+            color=discord.Color.green() if payout > 0 else discord.Color.red()
+        )
+        result_embed.add_field(name="Result", value=result_text, inline=False)
+        result_embed.add_field(name="New Balance", value=f"${self.cog.balances[user_id]:.2f}", inline=False)
+        
+        await interaction.followup.send(embed=result_embed)
+
+class TotalSelect(discord.ui.Select):
+    def __init__(self, cog):
+        self.cog = cog
+        game = cog.active_game
+        options = [
+            discord.SelectOption(label=f"Over {game['lines']['total']}", value="over"),
+            discord.SelectOption(label=f"Under {game['lines']['total']}", value="under")
+        ]
+        super().__init__(placeholder="Select Over/Under...", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        game = self.cog.active_game
+        
+        # Store the bet selection
+        self.cog.active_bet = {
+            "type": "total",
+            "selection": self.values[0],
+            "line": game["lines"]["total"]
+        }
+        
+        # Ask for bet amount
+        await interaction.response.send_message(
+            f"Enter your bet amount for {self.values[0]} {game['lines']['total']}:",
+            ephemeral=True
+        )
+        
+        # Wait for amount input
+        def check(m):
+            return m.author == interaction.user and m.channel == interaction.channel
+        
+        try:
+            msg = await self.cog.bot.wait_for("message", check=check, timeout=60)
+            amount = int(float(msg.content))
+            await self.process_bet(interaction, amount)
+        except (asyncio.TimeoutError, ValueError):
+            await interaction.followup.send("Invalid bet amount", ephemeral=True)
+
+    async def process_bet(self, interaction: discord.Interaction, amount: int):
+        user_id = self.cog.active_game["user_id"]
+        game = self.cog.active_game
+        bet = self.cog.active_bet
+        
+        # Simulate game outcome
+        if game["sport"] == "NFL":
+            team1_score = random.randint(10, 35)
+            team2_score = random.randint(10, 35)
+        else:
+            team1_score = random.randint(90, 130)
+            team2_score = random.randint(90, 130)
+        
+        total_score = team1_score + team2_score
+        over_hit = total_score > bet["line"]
+        
+        # Calculate payout
+        if (bet["selection"] == "over" and over_hit) or (bet["selection"] == "under" and not over_hit):
+            payout = amount + (amount * (100/110))
+            result_text = f"✅ Total {bet['selection']} {bet['line']}! Payout: ${payout:.2f}"
+        else:
+            payout = 0
+            result_text = f"❌ Total {'under' if over_hit else 'over'} {bet['line']}. You lost ${amount}"
+        
+        # Update balance
+        self.cog.balances[user_id] += payout - amount
+        self.cog._save_balances()
+        
+        # Create result embed
+        result_embed = discord.Embed(
+            title=f"🎲 {game['teams']['team1']['name']} {team1_score}-{team2_score} {game['teams']['team2']['name']}",
+            color=discord.Color.green() if payout > 0 else discord.Color.red()
+        )
+        result_embed.add_field(name="Result", value=result_text, inline=False)
+        result_embed.add_field(name="New Balance", value=f"${self.cog.balances[user_id]:.2f}", inline=False)
+        
+        await interaction.followup.send(embed=result_embed)
+
+
 async def setup(bot):
     await bot.add_cog(Games(bot))
+    await bot.add_cog(SportsBetting(bot))
