@@ -2,15 +2,17 @@
 import discord
 from discord.ext import commands
 import os
+from dotenv import load_dotenv
 import asyncio
 
 # Initialize bot
-TOKEN = 0 # Insert token here
-GUILD_ID = discord.Object(id=0) # Insert ID here
+load_dotenv()
+TOKEN = os.getenv("DISCORD_TOKEN") # Insert token here
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-bot_status = discord.Game("/info for more")
+bot_status = discord.Activity(type=discord.ActivityType.watching, name=" - /info")
+# bot_status = discord.Game("/info for more")
 
 # Bot client
 @bot.event
@@ -20,7 +22,7 @@ async def on_ready():
     print(f"{bot.user} is ready (ID: {bot.user.id})")
 
 async def change_bot_status():
-    await bot.change_presence(activity=bot_status)
+    await bot.change_presence(status=discord.Status.dnd, activity=bot_status)
 
 async def load():
     for filename in os.listdir("./cogs"):
