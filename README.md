@@ -35,16 +35,16 @@ git clone git@github.com:anvovn/cs407-project.git
 
 ## Assigning Bot Token
 
-Once you've downloaded/cloned and opened up the files, locate the main.py file, in which you'll see that you need to insert a bot token in line 8.
-To get the bot token, go back to the Discord Developer page, and under the Bot tab, click Reset Token and copy it, then assign that value as a string
-for the TOKEN variable on line 8. You may also want to assign GUILD_ID in which you right-click on your server's picture and click "copy id."
+Once you've downloaded/cloned and opened up the files, make a new file named ".env" and enter the following in it:
 
 ```python
-...
-# Initialize bot
-TOKEN = '<your token goes here>'
-GUILD_ID = discord.Object(id= <your guild id goes here>)
-...
+# In ".env"
+DISCORD_TOKEN = <your token goes here>
+```
+You'll want to make sure that you have dotenv installed:
+
+```bash
+pip install python-dotenv
 ```
 
-Once that is all completed, run main.py, and the bot should be up and running!
+When that is all completed, run main.py, and the bot should be up and running!
