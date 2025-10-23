@@ -1,6 +1,6 @@
 # General Purpose Discord Bot
 
-Welcome! This is my project for CS407. Instructions are listed below.
+Welcome! This is a simple multi-purpose Discord chatbot. Instructions are listed below.
 
 ## Installation
 
