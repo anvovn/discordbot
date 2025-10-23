@@ -4,12 +4,10 @@ from discord.ext import commands
 import os
 import asyncio
 from dotenv import load_dotenv
-from keepup import keepup
 
 # Initialize bot
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN") # Insert token here
-keepup()
 
 intents = discord.Intents.default()
 intents.message_content = True
